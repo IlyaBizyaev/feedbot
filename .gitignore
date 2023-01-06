@@ -1,0 +1,10 @@
+# Rust
+/target
+Cargo.lock
+
+# Bot configuration
+config.json
+env.sh
+
+# Bot data
+/cache
