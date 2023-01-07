@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2023 Ilya Bizyaev <me@ilyabiz.com>
+
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Runs feedbot every 5 minutes                                                                    
+Requires=feedbot.service
+
+[Timer]
+Unit=feedbot.service
+OnCalendar=*:0/5
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

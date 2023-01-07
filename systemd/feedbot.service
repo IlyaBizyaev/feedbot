@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2023 Ilya Bizyaev <me@ilyabiz.com>
+
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=The feedbot executable
+After=network.target
+
+[Service]
+User=feedbotuser
+Group=www-data
+WorkingDirectory=/home/feedbotuser
+# Use 'systemctl edit' to configure the environment.
+ExecStart=/usr/local/bin/feedbot
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
