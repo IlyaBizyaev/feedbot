@@ -4,15 +4,15 @@
 
 use crate::errors::BotError;
 
-use anyhow::{Context, Result};
-use itertools::Itertools;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use tokio::fs::{self, File};
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
-use url::{form_urlencoded, Url};
+use std::path::PathBuf;
 
-const CACHE_DIR: &str = "cache";
+use anyhow::{Context, Result};
+use itertools::Itertools;
+use tokio::fs::File;
+use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use url::Url;
 
 // This method does not affect the posted URLs, it is only used for in-cache representation.
 fn normalize_url(url_str: &str) -> Result<String> {
@@ -40,22 +40,25 @@ fn normalize_url(url_str: &str) -> Result<String> {
         }
     }
 
-    Ok(domain.to_owned() + "/" + &post_identifier)
+    let result = domain.to_owned() + "/" + &post_identifier;
+    if result != url_str {
+        log::debug!("Normalized '{}' to '{}'", url_str, result);
+    }
+
+    Ok(result)
 }
 
 pub struct UrlCache {
-    filename: String,
+    filename: PathBuf,
     cache_size: usize,
     cache_list: VecDeque<String>,
     cache_set: HashSet<String>,
 }
 
 impl UrlCache {
-    pub fn new(chat_id: &str, feed_url: &str, cache_size: usize) -> Self {
-        let feed_url_encoded: String =
-            form_urlencoded::byte_serialize(feed_url.as_bytes()).collect();
+    pub fn new(filename: PathBuf, cache_size: usize) -> Self {
         Self {
-            filename: format!("{}/{}-{}.txt", CACHE_DIR, chat_id, feed_url_encoded),
+            filename,
             cache_size,
             cache_list: VecDeque::with_capacity(cache_size),
             cache_set: HashSet::with_capacity(cache_size),
@@ -73,7 +76,9 @@ impl UrlCache {
             }
             Err(e) => {
                 // Other IO errors.
-                Err(e).with_context(|| format!("Failed to open cache file: {}", self.filename))
+                Err(e).with_context(|| {
+                    format!("Failed to open cache file: {}", self.filename.display())
+                })
             }
             Ok(mut file) => {
                 let mut cache_file_contents = String::new();
@@ -112,13 +117,20 @@ impl UrlCache {
     }
 
     pub async fn save(&self) -> Result<()> {
-        fs::create_dir_all(CACHE_DIR).await?;
-        let mut file = File::create(&self.filename)
-            .await
-            .with_context(|| format!("Failed to open cache file for writing: {}", self.filename))?;
+        let mut file = File::create(&self.filename).await.with_context(|| {
+            format!(
+                "Failed to open cache file for writing: {}",
+                self.filename.display()
+            )
+        })?;
         file.write_all(self.cache_list.iter().join("\n").as_bytes())
             .await
-            .with_context(|| format!("Failed to write to the cache file: {}", self.filename))?;
+            .with_context(|| {
+                format!(
+                    "Failed to write to the cache file: {}",
+                    &self.filename.display()
+                )
+            })?;
 
         Ok(())
     }

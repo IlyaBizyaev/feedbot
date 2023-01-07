@@ -6,17 +6,36 @@ mod cache;
 mod config;
 mod errors;
 
-use anyhow::Result;
+use std::future::IntoFuture;
+use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+use clap::Parser;
 use futures::future;
 use log::LevelFilter;
+use tokio::fs;
+use url::form_urlencoded;
+
 use rss::Channel;
-use std::future::IntoFuture;
 use teloxide::prelude::*;
 use teloxide::types::ParseMode;
 use teloxide::utils::html::escape;
 
 use cache::UrlCache;
 use config::Config;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+/// A Telegram bot to forward posts from IRC channels.
+struct Args {
+    /// Config file location.
+    #[arg(long, value_name = "FILE", default_value_os_t = PathBuf::from("config.json"))]
+    config: PathBuf,
+
+    /// Writable cache directory location.
+    #[arg(long, value_name = "DIR", default_value_os_t = PathBuf::from("cache"))]
+    cache: PathBuf,
+}
 
 async fn fetch_feed(feed_url: &str) -> Result<Channel> {
     let content = reqwest::get(feed_url).await?.bytes().await?;
@@ -33,9 +52,21 @@ fn format_item(item: &rss::Item, post_format: &str) -> String {
         .replace("$author", &escape(item.author().unwrap_or("")))
 }
 
-async fn handle_feed(feed: &config::Feed, bot: &Bot, owner_id: &str) -> Result<()> {
+fn make_cache_filename(cache_dir: &Path, chat_id: &str, feed_url: &str) -> PathBuf {
+    let feed_url_encoded: String = form_urlencoded::byte_serialize(feed_url.as_bytes()).collect();
+    cache_dir.join(format!("{}-{}.txt", chat_id, feed_url_encoded))
+}
+
+async fn handle_feed(
+    cache_dir: PathBuf,
+    feed: &config::Feed,
+    bot: &Bot,
+    owner_id: &str,
+) -> Result<()> {
     log::info!("Processing feed {}", &feed.url);
-    let mut url_cache = UrlCache::new(&feed.chat_id, &feed.url, feed.url_cache_size);
+
+    let cache_filename = make_cache_filename(&cache_dir, &feed.chat_id, &feed.url);
+    let mut url_cache = UrlCache::new(cache_filename, feed.url_cache_size);
     url_cache.load().await?;
 
     let feed_data = fetch_feed(&feed.url)
@@ -82,8 +113,19 @@ async fn handle_feed(feed: &config::Feed, bot: &Bot, owner_id: &str) -> Result<(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = Config::parse_from_file("config.json")
+    let args = Args::parse();
+
+    let config = Config::parse_from_file(args.config)
         .unwrap_or_else(|e| panic!("Could not read config: {}", e));
+
+    fs::create_dir_all(args.cache.as_path())
+        .await
+        .with_context(|| {
+            format!(
+                "Could not create the cache directory ('{}')",
+                args.cache.display()
+            )
+        })?;
 
     let log_filter = if config.general.debug {
         LevelFilter::Debug
@@ -103,7 +145,7 @@ async fn main() -> Result<()> {
     let feed_tasks: Vec<_> = config
         .feeds
         .iter()
-        .map(|feed| handle_feed(feed, &bot, &config.general.owner_id))
+        .map(|feed| handle_feed(args.cache.clone(), feed, &bot, &config.general.owner_id))
         .collect();
     future::join_all(feed_tasks)
         .await
