@@ -1,6 +1,6 @@
 # feedbot
 
-A simple Telegram bot to forward posts from IRC channels.
+A simple Telegram bot to forward posts from RSS channels.
 
 ## Configuration
 

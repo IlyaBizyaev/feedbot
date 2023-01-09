@@ -26,7 +26,7 @@ use config::Config;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-/// A Telegram bot to forward posts from IRC channels.
+/// A Telegram bot to forward posts from RSS channels.
 struct Args {
     /// Config file location.
     #[arg(long, value_name = "FILE", default_value_os_t = PathBuf::from("config.json"))]
