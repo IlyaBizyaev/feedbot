@@ -35,6 +35,10 @@ struct Args {
     /// Writable cache directory location.
     #[arg(long, value_name = "DIR", default_value_os_t = PathBuf::from("cache"))]
     cache: PathBuf,
+
+    /// Dry-run mode: skip updating the cache and publishing the posts.
+    #[arg(long, default_value_t = false)]
+    dry_run: bool,
 }
 
 async fn fetch_feed(feed_url: &str) -> Result<Channel> {
@@ -62,6 +66,7 @@ async fn handle_feed(
     feed: &config::Feed,
     bot: &Bot,
     owner_id: &str,
+    dry_run: bool,
 ) -> Result<()> {
     log::info!("Processing feed {}", &feed.url);
 
@@ -91,11 +96,16 @@ async fn handle_feed(
                         None
                     }
                     Ok(true) => {
+                        log::info!("Posting {} to {}", url, feed.chat_id);
                         let message_text = format_item(item, &feed.post_format);
-                        Some(
-                            bot.send_message(feed.chat_id.clone(), message_text)
-                                .parse_mode(ParseMode::Html),
-                        )
+                        if dry_run {
+                            None
+                        } else {
+                            Some(
+                                bot.send_message(feed.chat_id.clone(), message_text)
+                                    .parse_mode(ParseMode::Html),
+                            )
+                        }
                     }
                 },
             }
@@ -118,14 +128,16 @@ async fn main() -> Result<()> {
     let config = Config::parse_from_file(args.config)
         .unwrap_or_else(|e| panic!("Could not read config: {}", e));
 
-    fs::create_dir_all(args.cache.as_path())
-        .await
-        .with_context(|| {
-            format!(
-                "Could not create the cache directory ('{}')",
-                args.cache.display()
-            )
-        })?;
+    if !args.dry_run {
+        fs::create_dir_all(args.cache.as_path())
+            .await
+            .with_context(|| {
+                format!(
+                    "Could not create the cache directory ('{}')",
+                    args.cache.display()
+                )
+            })?;
+    }
 
     let log_filter = if config.general.debug {
         LevelFilter::Debug
@@ -145,7 +157,15 @@ async fn main() -> Result<()> {
     let feed_tasks: Vec<_> = config
         .feeds
         .iter()
-        .map(|feed| handle_feed(args.cache.clone(), feed, &bot, &config.general.owner_id))
+        .map(|feed| {
+            handle_feed(
+                args.cache.clone(),
+                feed,
+                &bot,
+                &config.general.owner_id,
+                args.dry_run,
+            )
+        })
         .collect();
     future::join_all(feed_tasks)
         .await
