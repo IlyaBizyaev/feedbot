@@ -14,7 +14,7 @@ A simple Telegram bot to forward posts from RSS channels.
 ```json
 {
     "general": {
-        "owner_id": "1234567"
+        "owner_id": 1234567
     },
     "feeds": [
         {

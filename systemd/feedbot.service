@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-FileCopyrightText: 2023-2025 Ilya Bizyaev <me@ilyabiz.com>
 
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,8 @@ After=network.target
 User=feedbotuser
 Group=www-data
 WorkingDirectory=/home/feedbotuser
-# Use 'systemctl edit' to configure the environment.
+Environment=RUST_BACKTRACE=full
+# Use 'systemctl edit' to configure the rest of the environment.
 ExecStart=/usr/local/bin/feedbot
 TimeoutStopSec=5
 
