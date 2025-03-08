@@ -39,3 +39,7 @@ teloxide = { version = "0.13", default-features = false, features = [
 
 [profile.release]
 lto = true
+# https://doc.rust-lang.org/cargo/reference/profiles.html#codegen-units
+codegen-units = 1
+# https://doc.rust-lang.org/cargo/reference/profiles.html#debug
+debug = "line-tables-only"

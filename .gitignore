@@ -1,5 +1,4 @@
 # Rust
-/target
 Cargo.lock
 
 # Bot configuration
@@ -8,3 +7,7 @@ env.sh
 
 # Bot data
 /cache
+
+# Build artifacts
+/target
+feedbot
