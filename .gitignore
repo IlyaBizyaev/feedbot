@@ -1,6 +1,3 @@
-# Rust
-Cargo.lock
-
 # Bot configuration
 config.json
 env.sh
