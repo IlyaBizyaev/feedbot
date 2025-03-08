@@ -2,8 +2,8 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
+mod bot_config;
 mod cache;
-mod config;
 mod errors;
 
 use std::future::IntoFuture;
@@ -11,8 +11,11 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use clap::Parser;
+use figment::{
+    Figment,
+    providers::{Env, Format, Json},
+};
 use futures::future;
-use log::LevelFilter;
 use tokio::fs;
 use url::form_urlencoded;
 
@@ -21,16 +24,16 @@ use teloxide::prelude::*;
 use teloxide::types::ParseMode;
 use teloxide::utils::html::escape;
 
+use bot_config::BotConfig;
 use cache::UrlCache;
-use config::Config;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 /// A Telegram bot to forward posts from RSS channels.
 struct Args {
     /// Config file location.
-    #[arg(long, value_name = "FILE", default_value_os_t = PathBuf::from("config.json"))]
-    config: PathBuf,
+    #[arg(long, value_name = "FILE")]
+    config: Option<PathBuf>,
 
     /// Writable cache directory location.
     #[arg(long, value_name = "DIR", default_value_os_t = PathBuf::from("cache"))]
@@ -63,9 +66,9 @@ fn make_cache_filename(cache_dir: &Path, chat_id: &str, feed_url: &str) -> PathB
 
 async fn handle_feed(
     cache_dir: PathBuf,
-    feed: &config::Feed,
+    feed: &bot_config::Feed,
     bot: &Bot,
-    owner_id: &str,
+    owner_id: UserId,
     dry_run: bool,
 ) -> Result<()> {
     log::info!("Processing feed {}", &feed.url);
@@ -123,10 +126,26 @@ async fn handle_feed(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args = Args::parse();
+    pretty_env_logger::formatted_timed_builder()
+        .parse_env(env_logger::Env::new().default_filter_or("info"))
+        .try_init()
+        .context("Failed to initialize the logger")?;
 
-    let config = Config::parse_from_file(args.config)
-        .unwrap_or_else(|e| panic!("Could not read config: {}", e));
+    log::info!("Parsing the settings…");
+    let args = Args::parse();
+    let bot_config = if let Some(config_file_path) = args.config {
+        Figment::new().merge(Json::file(config_file_path))
+    } else {
+        Figment::new().merge(Env::prefixed("FEEDBOT_"))
+    };
+    let bot_config: BotConfig = bot_config
+        .extract()
+        .context("Failed to deserialize the config")?;
+
+    if bot_config.feeds.is_empty() {
+        log::warn!("No feeds are configured, nothing to do.");
+        return Ok(());
+    }
 
     if !args.dry_run {
         fs::create_dir_all(args.cache.as_path())
@@ -139,22 +158,12 @@ async fn main() -> Result<()> {
             })?;
     }
 
-    let log_filter = if config.general.debug {
-        LevelFilter::Debug
-    } else {
-        LevelFilter::Warn
-    };
-    pretty_env_logger::formatted_builder()
-        .filter_level(log_filter)
-        .init();
-    log::info!("Debug logging enabled");
-
     log::info!("Starting the bot…");
     let bot = Bot::from_env();
     log::info!("The bot has started");
 
     log::info!("Starting the tasks…");
-    let feed_tasks: Vec<_> = config
+    let feed_tasks: Vec<_> = bot_config
         .feeds
         .iter()
         .map(|feed| {
@@ -162,17 +171,19 @@ async fn main() -> Result<()> {
                 args.cache.clone(),
                 feed,
                 &bot,
-                &config.general.owner_id,
+                bot_config.general.owner_id,
                 args.dry_run,
             )
         })
         .collect();
-    future::join_all(feed_tasks)
-        .await
+    let feed_task_results = future::join_all(feed_tasks).await;
+    let feed_task_errors = feed_task_results
         .into_iter()
-        .collect::<Result<Vec<()>, _>>()
-        .log_on_error()
-        .await;
+        .filter_map(|result| result.err())
+        .collect::<Vec<_>>();
+    for e in feed_task_errors {
+        log::error!("Task failed: {:#?}", e);
+    }
     log::info!("The tasks have finished");
 
     Ok(())

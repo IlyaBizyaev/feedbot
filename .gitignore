@@ -12,3 +12,6 @@ env.sh
 # Build artifacts
 /target
 feedbot
+
+# VSCode
+.vscode
