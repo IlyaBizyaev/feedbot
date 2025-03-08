@@ -2,8 +2,6 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::errors::BotError;
-
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::path::PathBuf;
@@ -20,9 +18,9 @@ fn normalize_url(url_str: &str) -> Result<String> {
     let url = Url::parse(url_str)
         .with_context(|| format!("Failed to parse the URL to normalize: {}", url_str))?;
 
-    let mut domain = url.domain().ok_or(BotError::NoDomain {
-        url: url.as_str().to_owned(),
-    })?;
+    let mut domain = url
+        .domain()
+        .with_context(|| format!("The URL has no domain: {}", url.as_str()))?;
     domain = domain.strip_prefix("www.").unwrap_or(domain);
 
     // Starts with "/".

@@ -1,10 +1,9 @@
-// SPDX-FileCopyrightText: 2023 Ilya Bizyaev <me@ilyabiz.com>
+// SPDX-FileCopyrightText: 2023-2025 Ilya Bizyaev <me@ilyabiz.com>
 
 // SPDX-License-Identifier: Apache-2.0
 
 mod bot_config;
 mod cache;
-mod errors;
 
 use std::future::IntoFuture;
 use std::path::{Path, PathBuf};
@@ -79,7 +78,7 @@ async fn handle_feed(
 
     let feed_data = fetch_feed(&feed.url)
         .await
-        .unwrap_or_else(|e| panic!("Could not fetch the feed: {}", e));
+        .context("Could not fetch the feed")?;
     let item_tasks: Vec<_> = feed_data
         .items
         .iter()
