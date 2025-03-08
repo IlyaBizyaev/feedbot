@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Ilya Bizyaev <me@ilyabiz.com>
+
+# SPDX-License-Identifier: Apache-2.0
+
 # This section is considered when running `cargo deny check licenses`
 # More documentation for the licenses section can be found here:
 # https://embarkstudios.github.io/cargo-deny/checks/licenses/cfg.html

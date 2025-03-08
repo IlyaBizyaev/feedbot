@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 Ilya Bizyaev <me@ilyabiz.com>
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # feedbot
 
 A simple Telegram bot to forward posts from RSS channels.

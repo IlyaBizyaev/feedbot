@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Ilya Bizyaev <me@ilyabiz.com>
+
+# SPDX-License-Identifier: Apache-2.0
+
 project := "feedbot"
 arch := "x86_64-unknown-linux-musl"
 build_type := "release"
