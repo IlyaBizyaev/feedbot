@@ -18,7 +18,6 @@ thiserror = "2.0"
 clap = { version = "4.5", features = ["derive"] }
 log = "0.4"
 pretty_env_logger = "0.5"
-env_logger = "*"
 
 futures = "0.3"
 itertools = "0.14"

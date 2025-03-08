@@ -126,7 +126,8 @@ async fn handle_feed(
 #[tokio::main]
 async fn main() -> Result<()> {
     pretty_env_logger::formatted_timed_builder()
-        .parse_env(env_logger::Env::new().default_filter_or("info"))
+        .filter_level(log::LevelFilter::Info)
+        .parse_default_env()
         .try_init()
         .context("Failed to initialize the logger")?;
 
