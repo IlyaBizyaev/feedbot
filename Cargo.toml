@@ -7,7 +7,7 @@ name = "feedbot"
 version = "1.0.0"
 authors = ["Ilya Bizyaev <me@ilyabiz.com>"]
 license = "Apache-2.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
