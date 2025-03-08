@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-FileCopyrightText: 2023-2025 Ilya Bizyaev <me@ilyabiz.com>
 
 # SPDX-License-Identifier: Apache-2.0
 
@@ -26,18 +26,16 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 url = { version = "2", features = ["serde"] }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls-native-roots",
+] }
 rss = { version = "2.0", default-features = false }
 
-tokio = { version =  "1.44", features = ["rt-multi-thread", "macros", "fs"] }
-teloxide = { version = "0.13", default-features = false, features = ["ctrlc_handler"] }
-
-# Note about rustls:
-# * rustls helps eliminate dynamic dependency on libcrypto and libssl;
-# * however, with the "rustls" feature, reqwest uses webpki-roots (MPL-2.0);
-# * can avoid that by using reqwest's "rustls-tls-native-roots" instead and removing "rustls" from teloxide;
-# * but then teloxide doesn't ask for any TLS features of reqwest, which feels fragile.
-# If this breaks, specify "rustls" for both reqwest and teloxide.
+tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "fs"] }
+teloxide = { version = "0.13", default-features = false, features = [
+    "ctrlc_handler",
+    "rustls-native-roots",
+] }
 
 [profile.release]
 lto = true
