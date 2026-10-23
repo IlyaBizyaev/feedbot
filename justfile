@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-FileCopyrightText: 2025-2026 Ilya Bizyaev <me@ilyabiz.com>
 
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,16 +17,28 @@ final_binary := src_dir / project
 default:
     just -l
 
+format:
+    cargo fmt
+
+test:
+    cargo test
+
+lint:
+    cargo clippy --tests
+
+lint-fix:
+    cargo clippy --tests --fix
+
 license:
     cargo deny check
 
 reuse:
-    reuse --root {{src_dir}} lint
+    reuse --root {{ src_dir }} lint
 
 prod:
     # TODO: use https://github.com/rust-lang/rust/issues/120953 once stabilized.
-    RUSTFLAGS="-C link-arg=-Wl,--compress-debug-sections=zlib-gabi" cargo build {{build_type_flag}} --target={{arch}}
-    rm -f {{final_binary}}
-    cp {{built_binary}} {{final_binary}}
-    echo "Final binary size:" $(du -h {{final_binary}} | cut -f1)
-    notify-send -a {{project}} "Build done!"
+    RUSTFLAGS="-C link-arg=-Wl,--compress-debug-sections=zlib-gabi" cargo build {{ build_type_flag }} --target={{ arch }}
+    rm -f {{ final_binary }}
+    cp {{ built_binary }} {{ final_binary }}
+    echo "Final binary size:" $(du -h {{ final_binary }} | cut -f1)
+    notify-send -a {{ project }} "Build done!"
