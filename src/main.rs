@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023-2025 Ilya Bizyaev <me@ilyabiz.com>
+// SPDX-FileCopyrightText: 2023-2026 Ilya Bizyaev <me@ilyabiz.com>
 
 // SPDX-License-Identifier: Apache-2.0
 
@@ -38,7 +38,7 @@ struct Args {
     #[arg(long, value_name = "DIR", default_value_os_t = PathBuf::from("cache"))]
     cache: PathBuf,
 
-    /// Dry-run mode: skip updating the cache and publishing the posts.
+    /// Skip publishing posts; still update cache files and send owner notifications.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
 }
@@ -147,16 +147,14 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    if !args.dry_run {
-        fs::create_dir_all(args.cache.as_path())
-            .await
-            .with_context(|| {
-                format!(
-                    "Could not create the cache directory ('{}')",
-                    args.cache.display()
-                )
-            })?;
-    }
+    fs::create_dir_all(args.cache.as_path())
+        .await
+        .with_context(|| {
+            format!(
+                "Could not create the cache directory ('{}')",
+                args.cache.display()
+            )
+        })?;
 
     log::info!("Starting the bot…");
     let bot = Bot::from_env();
