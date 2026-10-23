@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-FileCopyrightText: 2025-2026 Ilya Bizyaev <me@ilyabiz.com>
 
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,31 +14,34 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "Apache-2.0",
     "BSD-3-Clause",
+    "CDLA-Permissive-2.0",
     "ISC",
     "MIT",
-    "OpenSSL",
-    "Unicode-DFS-2016",
+    "MPL-2.0",
     "Unicode-3.0",
 ]
 
-# Some crates don't have (easily) machine readable licensing information,
-# adding a clarification entry for it allows you to manually specify the
-# licensing information
-[[licenses.clarify]]
-name = "ring"
-# SPDX considers OpenSSL to encompass both the OpenSSL and SSLeay licenses
-# https://spdx.org/licenses/OpenSSL.html
-# ISC - Both BoringSSL and ring use this for their new files
-# MIT - "Files in third_party/ have their own licenses, as described therein. The MIT
-# license, for third_party/fiat, which, unlike other third_party directories, is
-# compiled into non-test libraries, is included below."
-# OpenSSL - Obviously
-expression = "ISC AND MIT AND OpenSSL"
-license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+[advisories]
+ignore = [
+    # The bans below restrict this exception to teloxide -> aquamarine -> proc-macro-error2.
+    { id = "RUSTSEC-2026-0173", reason = """
+        Teloxide 0.17.0 uses Aquamarine 0.6.0 only behind cfg(doc) for documentation diagrams. \
+        proc-macro-error2 is compiled as a host dependency but is not linked into the bot. \
+        Reassess when updating Aquamarine or Teloxide.
+        """ },
+]
 
 # This section is considered when running `cargo deny check bans`.
 # More documentation about the 'bans' section can be found here:
 # https://embarkstudios.github.io/cargo-deny/checks/bans/cfg.html
 [bans]
 # Lint level for when multiple versions of the same crate are detected
-multiple-versions = "warn"
+multiple-versions = "allow"
+deny = [
+    { crate = "proc-macro-error2", wrappers = [
+        "aquamarine",
+    ], reason = "Only permitted for Teloxide's documentation diagrams; see RUSTSEC-2026-0173 exception." },
+    { crate = "aquamarine", wrappers = [
+        "teloxide",
+    ], reason = "Only permitted for Teloxide's cfg(doc) usage; reassess on Teloxide or Aquamarine updates." },
+]
