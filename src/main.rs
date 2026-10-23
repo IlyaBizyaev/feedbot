@@ -2,6 +2,8 @@
 
 // SPDX-License-Identifier: Apache-2.0
 
+#![warn(clippy::pedantic)]
+
 mod bot_config;
 mod cache;
 
@@ -60,7 +62,7 @@ fn format_item(item: &rss::Item, post_format: &str) -> String {
 
 fn make_cache_filename(cache_dir: &Path, chat_id: &str, feed_url: &str) -> PathBuf {
     let feed_url_encoded: String = form_urlencoded::byte_serialize(feed_url.as_bytes()).collect();
-    cache_dir.join(format!("{}-{}.txt", chat_id, feed_url_encoded))
+    cache_dir.join(format!("{chat_id}-{feed_url_encoded}.txt"))
 }
 
 async fn handle_feed(
@@ -70,7 +72,7 @@ async fn handle_feed(
     owner_id: UserId,
     dry_run: bool,
 ) -> Result<()> {
-    log::info!("Processing feed {}", &feed.url);
+    log::info!("Processing feed {}", feed.url);
 
     let cache_filename = make_cache_filename(&cache_dir, &feed.chat_id, &feed.url);
     let mut url_cache = UrlCache::new(cache_filename, feed.url_cache_size);
@@ -85,16 +87,14 @@ async fn handle_feed(
         .filter_map(|item| {
             let url = item.link();
             match url {
-                None => Some(
-                    bot.send_message(owner_id.to_owned(), format!("No URL in item {:?}", item)),
-                ),
+                None => Some(bot.send_message(owner_id, format!("No URL in item {item:?}"))),
                 Some(url) => match url_cache.insert(url) {
                     Err(cache_error) => Some(bot.send_message(
-                        owner_id.to_owned(),
-                        format!("Malformed item URL '{}': {}", url, cache_error),
+                        owner_id,
+                        format!("Malformed item URL '{url}': {cache_error}"),
                     )),
                     Ok(false) => {
-                        log::info!("Known URL: {}, nothing to do", url);
+                        log::info!("Known URL: {url}, nothing to do");
                         None
                     }
                     Ok(true) => {
@@ -112,7 +112,7 @@ async fn handle_feed(
                 },
             }
         })
-        .map(|req| req.into_future())
+        .map(IntoFuture::into_future)
         .collect();
     future::join_all(item_tasks)
         .await
@@ -177,10 +177,10 @@ async fn main() -> Result<()> {
     let feed_task_results = future::join_all(feed_tasks).await;
     let feed_task_errors = feed_task_results
         .into_iter()
-        .filter_map(|result| result.err())
+        .filter_map(Result::err)
         .collect::<Vec<_>>();
     for e in feed_task_errors {
-        log::error!("Task failed: {:#?}", e);
+        log::error!("Task failed: {e:#?}");
     }
     log::info!("The tasks have finished");
 

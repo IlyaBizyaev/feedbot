@@ -16,7 +16,7 @@ use url::Url;
 fn normalize_url(url_str: &str) -> Result<String> {
     // Should fail for relative URLs.
     let url = Url::parse(url_str)
-        .with_context(|| format!("Failed to parse the URL to normalize: {}", url_str))?;
+        .with_context(|| format!("Failed to parse the URL to normalize: {url_str}"))?;
 
     let mut domain = url
         .domain()
@@ -32,7 +32,7 @@ fn normalize_url(url_str: &str) -> Result<String> {
     } else {
         for suffix in [".htm", ".html"] {
             if let Some(stripped) = post_identifier.strip_suffix(suffix) {
-                post_identifier = stripped.to_owned();
+                post_identifier.truncate(stripped.len());
                 break;
             }
         }
@@ -40,7 +40,7 @@ fn normalize_url(url_str: &str) -> Result<String> {
 
     let result = domain.to_owned() + "/" + &post_identifier;
     if result != url_str {
-        log::debug!("Normalized '{}' to '{}'", url_str, result);
+        log::debug!("Normalized '{url_str}' to '{result}'");
     }
 
     Ok(result)
@@ -85,7 +85,7 @@ impl UrlCache {
                     .context("Failed to load a cache line")?;
                 let mut lines: VecDeque<String> = cache_file_contents
                     .split('\n')
-                    .map(|l| l.to_owned())
+                    .map(str::to_owned)
                     .filter(|l| !l.is_empty())
                     .collect();
                 if lines.len() > self.cache_size {
@@ -126,7 +126,7 @@ impl UrlCache {
             .with_context(|| {
                 format!(
                     "Failed to write to the cache file: {}",
-                    &self.filename.display()
+                    self.filename.display()
                 )
             })?;
 
