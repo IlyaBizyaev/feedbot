@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Check feeds with the feedbot container
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=/home/user/deploy
+ExecStart=/usr/bin/docker compose up --no-build --no-deps --pull never --exit-code-from feedbot feedbot
+ExecStop=/usr/bin/docker compose stop --timeout 20 feedbot
+TimeoutStopSec=30

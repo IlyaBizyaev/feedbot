@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-License-Identifier: Apache-2.0
+
+**
+!Cargo.toml
+!Cargo.lock
+!src/
+!src/**

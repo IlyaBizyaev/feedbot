@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  feedbot:
+    image: ghcr.io/ilyabizyaev/feedbot:latest
+    build: .
+    environment:
+      TELOXIDE_TOKEN: ${FEEDBOT_TELOXIDE_TOKEN:?Set FEEDBOT_TELOXIDE_TOKEN}
+    volumes:
+      - type: bind
+        source: ./feedbot/config.json
+        target: /app/config.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./feedbot/cache
+        target: /data
+        bind:
+          create_host_path: false

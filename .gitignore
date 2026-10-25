@@ -4,7 +4,7 @@
 
 # Bot configuration
 config.json
-env.sh
+.env
 
 # Bot data
 /cache

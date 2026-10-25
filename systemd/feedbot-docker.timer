@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Ilya Bizyaev <me@ilyabiz.com>
+# SPDX-License-Identifier: Apache-2.0
+
+[Unit]
+Description=Run the feedbot container every five minutes
+
+[Timer]
+Unit=feedbot-docker.service
+OnCalendar=*:0/5
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target
